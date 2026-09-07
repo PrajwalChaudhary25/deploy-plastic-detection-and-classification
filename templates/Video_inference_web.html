@@ -1,0 +1,63 @@
+<div style="position: relative; display: inline-block;">
+    <video id="webcam" autoplay playsinline width="640" height="480" style="display:none;"></video>
+    <canvas id="output_canvas" width="640" height="480"></canvas>
+</div>
+
+<script>
+  const video = document.getElementById('webcam');
+  const canvas = document.getElementById('output_canvas');
+  const ctx = canvas.getContext('2d');
+  let isProcessing = false;
+
+  navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } })
+    .then((stream) => { video.srcObject = stream; })
+    .catch((err) => console.error("Camera access error:", err));
+
+  async function captureAndSendFrame() {
+    if (isProcessing || !video.videoWidth) return;
+    isProcessing = true;
+
+    // Draw current video frame to canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Extract JPEG base64 string
+    const frameData = canvas.toDataURL('image/jpeg', 0.5);
+
+    try {
+            const response = await fetch('/process_frame', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: frameData })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                drawDetections(data.detections || []);
+            }
+        } catch (err) {
+            console.error("Frame stream error:", err);
+        } finally {
+            isProcessing = false;
+        }
+    }
+  }
+
+  function drawDetections(detections) {
+    // Redraw current frame beneath annotations
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    detections.forEach(det => {
+        const [xmin, ymin, xmax, ymax] = det.bbox;
+        ctx.strokeStyle = '#00FF00';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(xmin, ymin, xmax - xmin, ymax - ymin);
+
+        ctx.fillStyle = '#00FF00';
+        ctx.font = '16px Arial';
+        ctx.fillText(`${det.class} (${Math.round(det.confidence * 100)}%)`, xmin, ymin > 20 ? ymin - 5 : 20);
+    });
+  }
+
+    // Capture & run inference 4 times per second (4 FPS target)
+    setInterval(captureAndSendFrame, 250);
+</script>
