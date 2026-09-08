@@ -39,7 +39,13 @@ with image.imports():
   torch.set_default_device("cpu")
   from ultralytics import YOLO
 
-@app.cls(image=image, cpu=1.5, memory=2048)
+@app.cls(
+    image=image,
+    cpu=1.5,
+    memory=2048,
+    container_idle_timeout=30,  # Container stops 15 seconds after processing a photo
+)
+
 class PlasticInference:
   @modal.enter()
   def load_models(self):
