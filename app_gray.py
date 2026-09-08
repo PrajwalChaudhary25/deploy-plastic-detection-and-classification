@@ -5,8 +5,7 @@ from flask import Flask, render_template, request, jsonify
 app = Flask(__name__)
 
 MODAL_ENDPOINT = os.environ.get(
-    "MODAL_ENDPOINT_URL", 
-    "https://prajwalchy25--yolo-cnn-inference-plasticinference-predict-dev.modal.run"
+    "MODAL_ENDPOINT_URL"
 )
 
 @app.route("/")
