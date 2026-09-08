@@ -16,9 +16,9 @@
         }
     </script>
 </head>
-<body class="bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 text-gray-800">
-    <div class="container mx-auto p-4">
-        <h1 class="text-5xl font-extrabold mb-6 text-center text-white">Plastic Detection and Classification</h1>
+<body class="bg-gray-100 text-gray-800">
+    <div class="container mx-auto max-w-6xl p-4">
+        <h1 class="text-4xl font-bold mb-6 text-center text-gray-900">Plastic Detection and Classification</h1>
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 <div class="bg-red-500 text-white p-4 rounded mb-4">
@@ -28,9 +28,9 @@
                 </div>
             {% endif %}
         {% endwith %}
-        <div class="bg-white p-8 rounded-lg shadow-lg">
+        <div class="bg-white border border-gray-200 p-8 rounded-md">
             <h2 class="text-3xl font-semibold mb-6 text-center text-blue-700">Upload Photo for Inference</h2>
-            <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" class="mb-6" onsubmit="return validateForm()">
+            <form id="uploadForm" action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" class="mb-6">
                 <div id="drop-area" class="border-4 border-dashed border-gray-300 p-6 rounded-lg text-center bg-gray-50 hover:bg-gray-100 transition duration-300">
                     <p class="text-gray-500">Drag & Drop your file here</p>
                     <p class="text-gray-500">or</p>
@@ -38,10 +38,18 @@
                 </div>
                 <input type="submit" value="Upload" class="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-700 transition duration-300">
             </form>
+            <p id="uploadStatus" class="hidden mb-4 text-center"></p>
+            <div id="loader" class="hidden text-center text-blue-700">
+                <div class="inline-block w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin align-middle mr-2"></div>
+                <span>Running inference...</span>
+            </div>
         </div>
         <script>
             var dropArea = document.getElementById('drop-area');
             var fileInput = document.getElementById('fileInput');
+            var uploadForm = document.getElementById('uploadForm');
+            var uploadStatus = document.getElementById('uploadStatus');
+            var loader = document.getElementById('loader');
 
             dropArea.addEventListener('dragover', function(event) {
                 event.preventDefault();
@@ -59,12 +67,75 @@
                 var files = event.dataTransfer.files;
                 fileInput.files = files;
             });
+
+            uploadForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                if (fileInput.files.length === 0) {
+                    uploadStatus.textContent = 'No file selected';
+                    uploadStatus.className = 'mb-4 text-center text-red-600';
+                    return;
+                }
+
+                uploadStatus.textContent = 'Running inference...';
+                uploadStatus.className = 'hidden mb-4 text-center text-blue-600';
+                loader.classList.remove('hidden');
+
+                try {
+                    var response = await fetch(uploadForm.action, {
+                        method: 'POST',
+                        body: new FormData(uploadForm)
+                    });
+                    var data = await response.json();
+
+                    if (!response.ok || data.error) {
+                        throw new Error(data.error || 'Inference failed');
+                    }
+
+                    var imageDataUrl = await readFileAsDataUrl(fileInput.files[0]);
+                    sessionStorage.setItem('photoInference', JSON.stringify({
+                        image: imageDataUrl,
+                        detections: data.detections || []
+                    }));
+                    window.location.href = '{{ url_for("photo_inference") }}';
+                } catch (error) {
+                    loader.classList.add('hidden');
+                    uploadStatus.textContent = error.message;
+                    uploadStatus.className = 'mb-4 text-center text-red-600';
+                }
+            });
+
+            function readFileAsDataUrl(file) {
+                return new Promise(function(resolve, reject) {
+                    var reader = new FileReader();
+                    reader.onload = function() { resolve(reader.result); };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(file);
+                });
+            }
         </script>
-        <div class="bg-white p-8 rounded-lg shadow-lg mt-6">
-            <h2 class="text-3xl font-semibold mb-6 text-center text-green-700">Video Inference</h2>
-            <form action="{{ url_for('start_video_inference') }}" method="post"> <!-- Updated action -->
-                <input type="submit" value="Start Video Inference" class="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-700 transition duration-300">
-            </form>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6 items-start">
+            <section class="bg-white border border-gray-200 p-6 rounded-md">
+                <h2 class="text-2xl font-semibold mb-3 text-blue-700">Upload Tips</h2>
+                <ol class="list-decimal list-inside space-y-3 text-gray-700">
+                    <li>If you see a timeout, wait a few seconds and upload again. The Modal container may be starting.</li>
+                    <li>Upload a clear photo where the plastic item is visible and not heavily cropped.</li>
+                    <li>Use good lighting and keep the item in focus for better classification.</li>
+                </ol>
+                <div class="mt-5 h-56 overflow-hidden rounded-md border border-gray-200 bg-gray-50">
+                    <img src="{{ url_for('static', filename='images/example.jpg') }}"
+                         alt="Example plastic bottle"
+                         class="h-full w-full object-cover">
+                </div>
+            </section>
+            <section class="bg-white border border-gray-200 px-6 py-9 rounded-md">
+                <h2 class="text-2xl font-semibold mb-3 text-green-700">Project Architecture</h2>
+                <div class="h-96 overflow-hidden rounded-md border border-gray-200 bg-gray-50 flex items-center justify-center">
+                    <img src="{{ url_for('static', filename='images/architecture.png') }}"
+                         alt="Project architecture"
+                         class="h-full w-full object-contain">
+                </div>
+            </section>
         </div>
     </div>
 </body>
