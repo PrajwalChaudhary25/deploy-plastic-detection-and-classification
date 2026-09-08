@@ -29,7 +29,7 @@ def upload_file():
 
   # Forward payload to Modal
   try:
-      response = requests.post(MODAL_ENDPOINT, json={"image": base64_image}, timeout=10)
+      response = requests.post(MODAL_ENDPOINT, json={"image": base64_image}, timeout=20)
       return jsonify(response.json()), response.status_code
   except Exception as e:
       return jsonify({"error": str(e)}), 500

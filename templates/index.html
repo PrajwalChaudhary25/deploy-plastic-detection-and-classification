@@ -100,7 +100,7 @@
                     window.location.href = '{{ url_for("photo_inference") }}';
                 } catch (error) {
                     loader.classList.add('hidden');
-                    uploadStatus.textContent = error.message;
+                    uploadStatus.textContent = error.message + ' Please try again after few seconds.';
                     uploadStatus.className = 'mb-4 text-center text-red-600';
                 }
             });
@@ -118,7 +118,7 @@
             <section class="bg-white border border-gray-200 p-6 rounded-md">
                 <h2 class="text-2xl font-semibold mb-3 text-blue-700">Upload Tips</h2>
                 <ol class="list-decimal list-inside space-y-3 text-gray-700">
-                    <li>One Modal container is kept warm, but a short startup may still happen after inactivity. If you see a timeout, wait a few seconds and upload again.</li>
+                    <li style="color: red">If you see a timeout, wait a few seconds and upload again.</li>
                     <li>Upload a clear photo where the plastic item is visible and not heavily cropped.</li>
                     <li>Use good lighting and keep the item in focus for better classification.</li>
                 </ol>
