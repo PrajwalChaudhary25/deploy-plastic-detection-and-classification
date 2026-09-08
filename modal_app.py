@@ -1,11 +1,4 @@
-import os
 
-os.environ["OMP_NUM_THREADS"] = "1"
-os.environ["OPENBLAS_NUM_THREADS"] = "1"
-os.environ["MKL_NUM_THREADS"] = "1"
-os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
-os.environ["NUMEXPR_NUM_THREADS"] = "1"
-os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
 import modal
 
@@ -30,6 +23,14 @@ image = (
 
 # Tells Modal to import these modules only inside the cloud container
 with image.imports():
+  import os
+  os.environ["OMP_NUM_THREADS"] = "1"
+  os.environ["OPENBLAS_NUM_THREADS"] = "1"
+  os.environ["MKL_NUM_THREADS"] = "1"
+  os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+  os.environ["NUMEXPR_NUM_THREADS"] = "1"
+  os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+  
   import cv2
   import numpy as np
   import base64
@@ -43,7 +44,7 @@ with image.imports():
     image=image,
     cpu=1.5,
     memory=2048,
-    container_idle_timeout=30,  # Container stops 15 seconds after processing a photo
+    scaledown_window=30,  # Container stops 15 seconds after processing a photo
 )
 
 class PlasticInference:
